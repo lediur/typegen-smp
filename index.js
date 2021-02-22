@@ -1,4 +1,3 @@
-import fs from "fs";
 import got from "got";
 import tsm from "ts-morph";
 
@@ -15,20 +14,34 @@ async function main() {
       response.body
     );
     const langserv = project.getLanguageService();
+
+    // known nested span that breaks emit, hack around it
+    // todo: more robust solution (can't parse from the code-fix, need to walk the ast?)
+    const measure = src
+      .getFunction("GdiGraphics")
+      .getFunction("MeasureStringInfo");
+    src.addFunction(measure.getStructure());
+    measure.remove();
+
     const action = langserv.getCombinedCodeFix(
       src,
       "convertFunctionToEs6Class"
     );
-    const changes = action.getChanges();
+    /** @type {tsm.TextChange[]} */
+    const changes = [].concat(
+      ...action.getChanges().map((f) => f.getTextChanges())
+    );
 
-    let i = 0;
-    for (const change of changes) {
-      change.applyChanges();
-      const output = src.getEmitOutput({ emitOnlyDtsFiles: true });
-      for (const outputFile of output.getOutputFiles()) {
-        fs.writeFileSync(`output${i}.d.ts`, outputFile.getText());
-      }
+    const sortedBySpanSize = changes.sort(
+      (a, b) => a.getSpan().getLength() - b.getSpan().getLength()
+    );
+
+    for (const change of sortedBySpanSize) {
+      const span = change.getSpan();
     }
+
+    action.applyChanges();
+    const output = await project.emit({ emitOnlyDtsFiles: true });
   } catch (error) {
     console.error(error);
     if (error.response != null) {
