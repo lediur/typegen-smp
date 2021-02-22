@@ -23,11 +23,14 @@ async function main() {
     src.addFunction(measure.getStructure());
     measure.remove();
 
+    // convert to es6 class type declarations to play better with modern tooling
     const action = langserv.getCombinedCodeFix(
       src,
       "convertFunctionToEs6Class"
     );
     action.applyChanges();
+
+    // emits file in the working dir
     await project.emit({ emitOnlyDtsFiles: true });
   } catch (error) {
     console.error(error);
