@@ -27,21 +27,8 @@ async function main() {
       src,
       "convertFunctionToEs6Class"
     );
-    /** @type {tsm.TextChange[]} */
-    const changes = [].concat(
-      ...action.getChanges().map((f) => f.getTextChanges())
-    );
-
-    const sortedBySpanSize = changes.sort(
-      (a, b) => a.getSpan().getLength() - b.getSpan().getLength()
-    );
-
-    for (const change of sortedBySpanSize) {
-      const span = change.getSpan();
-    }
-
     action.applyChanges();
-    const output = await project.emit({ emitOnlyDtsFiles: true });
+    await project.emit({ emitOnlyDtsFiles: true });
   } catch (error) {
     console.error(error);
     if (error.response != null) {
